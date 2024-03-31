@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Car List</title>
+</head>
+<style>
+    * 
+    {
+        font-family: Arial, Helvetica, sans-serif;
+    }
+    body 
+    {
+        font-family: Arial, Helvetica, sans-serif;
+    }
+</style>
+<body>
+    <h2>Add New Car</h2>
+    <form id="addCarForm">
+        <label for="model">Model: </label>
+        <input type="text" id="model" name="model"><br><br>
+        <label for="maxSpeed">Max Speed: </label>
+        <input type="text" id="maxSpeed" name="maxSpeed"><br><br>
+        <label for="description">Description: </label>
+        <input type="text" id="description" name="description"><br><br>
+        <button type="submit">Add Car</button>
+    </form>
+    <hr>
+    <table id="carTab">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Model</th>
+                <th>Max Speed</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        async function fetchCars()
+        {
+            const response = await fetch('/api/cars');
+            const cars = await response.json();
+            const tableBody = document.querySelector('#carTab tbody');
+            tableBody.innerHTML = '';
+            cars.forEach(car =>
+            {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                                <td>${car.id}</td>
+                                <td>${car.model}</td>
+                                <td>${car.maxSpeed}</td>
+                                <td>${car.description}</td>
+                                <td>
+                                    <button onclick="updateCar(${car.id}, '${car.model}', ${car.maxSpeed}, '${car.description}')">Update</button>
+                                    <button onclick="deleteCar(${car.id})">Delete</button>
+                                </td>
+                            `;
+                tableBody.appendChild(row);
+            });
+        }
+        async function updateCar(carId, model, maxSpeed, description)
+        {
+            const newMaxSpeed = prompt('Enter new max speed:', maxSpeed);
+            if (newMaxSpeed !== null)
+            {
+                const response = await fetch(`/api/cars/${carId}`,
+                    {
+                        method: 'PUT',
+                        headers:
+                        {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ id: carId, model: model, maxSpeed: parseFloat(newMaxSpeed), description: description })
+                    });
+                if (response.ok)
+                {
+                    fetchCars();
+                }
+                else
+                {
+                    alert('Failed to update car!');
+                }
+            }
+        }
+        async function deleteCar(carId)
+        {
+            const confirmDelete = confirm('Are you sure you want to delete this car?');
+            if (confirmDelete)
+            {
+                const response = await fetch(`/api/cars/${carId}`,
+                    {
+                        method: 'DELETE'
+                    });
+                if (response.ok)
+                {
+                    fetchCars();
+                }
+                else
+                {
+                    alert('Failed to delete car!');
+                }
+            }
+        }
+        document.getElementById('addCarForm').addEventListener('submit', async function (event)
+        {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const model = formData.get('model');
+            const maxSpeed = formData.get('maxSpeed');
+            const description = formData.get('description');
+            const response = await fetch('/api/cars',
+                {
+                    method: 'POST',
+                    headers:
+                    {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        maxSpeed: parseFloat(maxSpeed),
+                        description: description
+                    })
+                });
+            if (response.ok)
+            {
+                fetchCars();
+                this.reset();
+            }
+            else
+            {
+                alert('Failed to add car!');
+            }
+        });
+        fetchCars();
+    </script>
+</body>
+</html>
